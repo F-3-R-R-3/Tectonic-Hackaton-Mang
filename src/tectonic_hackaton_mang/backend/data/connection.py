@@ -1,17 +1,14 @@
 from __future__ import annotations
 
-import os
 import sqlite3
-from pathlib import Path
 
-DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "fake.db"
-DB_PATH = Path(os.environ.get("KBC_DB", DEFAULT_DB_PATH))
+from ..config import DB_PATH
 
 
 def get_db() -> sqlite3.Connection:
     """Open de gedeelde fake-dataset en geef een connectie terug.
 
-    Rijen zijn te lezen via de kolomnaam, bv. ``row["amount"]``.
+    Rijen zijn te lezen via de kolomnaam, bv. ``row["bedrag"]``.
     Overschrijf het pad indien nodig met de env-variabele ``KBC_DB``.
     """
     if not DB_PATH.exists():

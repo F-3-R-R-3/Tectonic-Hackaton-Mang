@@ -19,7 +19,7 @@ import sqlite3
 from collections import defaultdict
 from datetime import date
 
-from ..dataset import (
+from ..data.readers import (
     klant_naam,
     load_abonnementen,
     load_klanten,
@@ -28,7 +28,7 @@ from ..dataset import (
     load_zoekopdrachten,
     reference_date,
 )
-from ..transactions import (
+from ..data.transactions import (
     Transaction,
     load_transactions,
     months_covered,

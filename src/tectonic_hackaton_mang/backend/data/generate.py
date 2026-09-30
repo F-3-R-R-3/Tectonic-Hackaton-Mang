@@ -4,7 +4,7 @@ Reproduceerbaar via vaste seed. Bevat alle demo-persona's in één database
 met scripted verhaallijnen (signaal ➜ probleem ➜ oplossing).
 
 Gebruik:
-    uv run python -m tectonic_hackaton_mang.database
+    uv run python -m tectonic_hackaton_mang.backend.data.generate
 """
 
 from __future__ import annotations
@@ -15,7 +15,8 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parents[2] / "data" / "fake.db"
+from ..config import DB_PATH
+
 SEED = 2026
 TODAY = date(2026, 9, 30)
 

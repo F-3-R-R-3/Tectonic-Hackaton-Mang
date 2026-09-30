@@ -3,21 +3,19 @@ from __future__ import annotations
 import importlib
 import json
 import pkgutil
-from pathlib import Path
 
-from . import functions
-from .db import get_db
-
-OUTPUT_DIR = Path(__file__).resolve().parents[2] / "output"
+from . import signals
+from .config import OUTPUT_DIR
+from .data.connection import get_db
 
 
 def _discover() -> list[tuple[str, object]]:
-    """Verzamel alle functies uit ``functions/*.py`` via hun ``FUNCTIONS``-lijst."""
+    """Verzamel alle functies uit ``signals/*.py`` via hun ``FUNCTIONS``-lijst."""
     found: list[tuple[str, object]] = []
-    for module_info in pkgutil.iter_modules(functions.__path__):
+    for module_info in pkgutil.iter_modules(signals.__path__):
         if module_info.name.startswith("_"):
             continue
-        module = importlib.import_module(f"{functions.__name__}.{module_info.name}")
+        module = importlib.import_module(f"{signals.__name__}.{module_info.name}")
         for func in getattr(module, "FUNCTIONS", []):
             found.append((module_info.name, func))
     return found

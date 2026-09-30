@@ -14,7 +14,7 @@ Endpoints:
     POST /api/users/{persona_id}/signals/{signal_id}/act  (Bearer token, enkel eigen id)
 
 Gebruik:
-    uv run python -m tectonic_hackaton_mang.server --port 8000
+    uv run python -m tectonic_hackaton_mang.backend.server --port 8000
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from .auth import (
     revoke,
     user_for_token,
 )
-from .db import get_db
+from .data.connection import get_db
 from .website_api import build_personas
 
 # In-memory cache zodat we de functies niet bij elk request opnieuw draaien.

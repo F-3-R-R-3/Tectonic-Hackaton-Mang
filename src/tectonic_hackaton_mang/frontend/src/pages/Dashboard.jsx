@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import SignalCard from '../components/SignalCard'
-import FlowStrip from '../components/FlowStrip'
 import { IconSignal, IconCheck, IconEuro } from '../components/Icons'
 
 function Loading() {
@@ -76,8 +75,6 @@ export default function Dashboard() {
           <div className="stat__value">{done.length}</div>
         </div>
       </div>
-
-      <FlowStrip />
 
       <div className="section-head">
         <h2>

@@ -9,7 +9,7 @@
  * een klant enkel zijn eigen signalen kan opvragen (autorisatie / IDOR).
  *
  * Start de API met:
- *   uv run python -m tectonic_hackaton_mang.server --port 8000
+ *   uv run python -m tectonic_hackaton_mang.backend.server --port 8000
  */
 const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000'
 const TOKEN_KEY = 'kbc-signalengine-token'

@@ -12,7 +12,7 @@ from __future__ import annotations
 import sqlite3
 from collections import defaultdict
 
-from ..dataset import klant_naam, load_abonnementen, load_klanten, reference_date
+from ..data.readers import klant_naam, load_abonnementen, load_klanten, reference_date
 
 DORMANT_DAYS = 90
 

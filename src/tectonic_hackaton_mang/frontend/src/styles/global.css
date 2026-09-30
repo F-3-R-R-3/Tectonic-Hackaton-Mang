@@ -615,41 +615,6 @@ p {
   color: var(--text-muted);
 }
 
-/* ---------- Flow strip ---------- */
-.flow-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 26px;
-}
-.flow-strip__item {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  position: relative;
-  box-shadow: var(--shadow-sm);
-}
-.flow-strip__num {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--kbc-cyan-soft);
-  color: var(--kbc-blue);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  margin-bottom: 10px;
-}
-.flow-strip__item h4 {
-  font-size: 0.98rem;
-  margin-bottom: 2px;
-}
-.flow-strip__item p {
-  font-size: 0.85rem;
-  margin: 0;
-}
-
 /* =========================================================
    Signal cards
    ========================================================= */
@@ -1471,7 +1436,6 @@ p {
     width: 100%;
   }
   .stat-grid,
-  .flow-strip,
   .stepper,
   .evidence,
   .feature-grid {

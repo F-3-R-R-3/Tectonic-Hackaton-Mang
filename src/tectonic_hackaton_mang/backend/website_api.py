@@ -1,14 +1,13 @@
 """Bouw het SignalEngine-contract (JSON) uit de echte dataset + functies.
 
 Dit is de brug tussen de back-end en de React-website. Het gebruikt **de echte
-functies** uit ``functions/`` (``find_recurring_expenses`` en
-``analyze_home_purchase``) en de gedeelde leeslaag ``dataset.py`` /
-``transactions.py`` om per klant een set **signalen** te bouwen volgens de flow
-* signaal ➜ probleem ➜ oplossing *.
+functies** uit ``backend/signals/`` (``find_recurring_expenses`` en
+``analyze_home_purchase``) en de gedeelde leeslaag ``backend/data/`` om per klant
+een set **signalen** te bouwen volgens de flow * signaal ➜ probleem ➜ oplossing *.
 
 Gebruik:
-    uv run python -m tectonic_hackaton_mang.website_api            # print JSON
-    uv run python -m tectonic_hackaton_mang.website_api --out out.json
+    uv run python -m tectonic_hackaton_mang.backend.website_api            # print JSON
+    uv run python -m tectonic_hackaton_mang.backend.website_api --out out.json
 """
 
 from __future__ import annotations
@@ -19,7 +18,8 @@ import sqlite3
 from collections import defaultdict
 from datetime import UTC, datetime
 
-from .dataset import (
+from .data.connection import get_db
+from .data.readers import (
     klant_naam,
     load_abonnementen,
     load_klanten,
@@ -28,10 +28,9 @@ from .dataset import (
     load_zoekopdrachten,
     reference_date,
 )
-from .db import get_db
-from .functions.home_purchase import analyze_home_purchase
-from .functions.recurring_expenses import find_recurring_expenses
-from .transactions import Transaction, load_transactions, months_covered
+from .data.transactions import Transaction, load_transactions, months_covered
+from .signals.home_purchase import analyze_home_purchase
+from .signals.recurring_expenses import find_recurring_expenses
 
 PERSONA_LABELS = {
     "student": "Student",
@@ -539,7 +538,7 @@ def _why_persona(klant: dict, signals: list[dict], tag: str | None) -> list[str]
 
 def _demo_tags(conn: sqlite3.Connection) -> dict[int, str]:
     # De demo-persona's dragen hun tag in database.py; we leiden ze af uit id.
-    from .database import DEMO_PERSONAS
+    from .data.generate import DEMO_PERSONAS
 
     return {p.id: p.tag for p in DEMO_PERSONAS}
 
