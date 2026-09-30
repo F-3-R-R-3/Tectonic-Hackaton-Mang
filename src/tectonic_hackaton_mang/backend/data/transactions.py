@@ -220,6 +220,8 @@ def load_transactions(conn: sqlite3.Connection) -> tuple[str, list[Transaction]]
     if found is None:
         return None
     table, mapping = found
+    if not re.match(r'^[a-zA-Z0-9_]+$', str(table)):
+        raise ValueError("Invalid input")
     result: list[Transaction] = []
     for row in conn.execute(f'SELECT * FROM "{table}"').fetchall():
         date = parse_date(row[mapping["date"]])
