@@ -120,16 +120,23 @@ verwerken schrijven **JSON-bestanden** naar `output/`, die de website inleest.
 
 ```
 src/tectonic_hackaton_mang/
-├── db.py              # gedeelde helper: get_db() opent de dataset
-├── functions/         # ⭐ hier bouw je functies, 1 bestand per persoon/feature
+├── db.py                  # gedeelde helper: get_db() opent de dataset
+├── transactions.py        # gedeelde helpers: tabel/kolommen detecteren + parsen
+├── functions/             # ⭐ hier bouw je functies, 1 bestand per persoon/feature
 │   ├── __init__.py
-│   └── voorbeeld.py   # sjabloon + voorbeeldfunctie
-└── export.py          # draait alle functies → schrijft output/*.json
+│   ├── voorbeeld.py       # sjabloon + voorbeeldfunctie
+│   ├── recurring_expenses.py  # terugkerende uitgaven / abonnementen
+│   └── home_purchase.py   # spaar- en woonanalyse
+└── export.py              # draait alle functies → schrijft output/*.json
 data/
-└── fake.db            # fake-dataset (SQLite)
+└── fake.db                # fake-dataset (SQLite)
 output/
-└── *.json             # output voor de website (gegenereerd, niet gecommit)
+└── *.json                 # output voor de website (gegenereerd, niet gecommit)
 ```
+
+> 🧰 **`transactions.py`** is de gedeelde laag: `load_transactions(conn)` detecteert
+> zelf de transactietabel en de kolommen (NL/EN) en geeft `Transaction`-objecten terug.
+> Gebruik die i.p.v. zelf SQL-kolomnamen te raden.
 
 > ⚠️ **Naam van het bestand:** gebruik `data/fake.db`, **niet** `db.sqlite3` — die
 > laatste staat in `.gitignore` en zou dus niet gedeeld worden via git.
@@ -165,6 +172,149 @@ FUNCTIONS = [slapende_abonnementen]
 uv run python -m tectonic_hackaton_mang.export
 ```
 Dit schrijft `output/<bestand>__<functie>.json`, klaar om door de website gelezen te worden.
+
+### Beschikbare functies
+
+#### `find_recurring_expenses` — terugkerende uitgaven / abonnementen
+`functions/recurring_expenses.py` → output: `output/recurring_expenses__find_recurring_expenses.json`
+
+Detecteert **maandelijkse én jaarlijkse** terugkerende uitgaven (abonnementen) op basis
+van historiek. Ze is **schema-onafhankelijk**: de functie zoekt zelf de transactietabel en
+de kolommen voor datum, bedrag, naam en (optioneel) categorie, met zowel NL- als EN-kolomnamen.
+
+```json
+{
+  "title": "Terugkerende uitgaven",
+  "message": "3 terugkerende uitgaven gevonden (2 maandelijks, 1 jaarlijks).",
+  "source_table": "transacties",
+  "count": 3,
+  "monthly_count": 2,
+  "yearly_count": 1,
+  "monthly_total": 33.23,
+  "yearly_total": 398.76,
+  "subscriptions": [
+    {
+      "name": "NETFLIX.COM",
+      "frequency": "monthly",
+      "average_amount": 13.99,
+      "currency": "EUR",
+      "category": "Entertainment",
+      "occurrences": 6,
+      "months_active": 6,
+      "interval_days": 31,
+      "first_seen": "2026-01-05",
+      "last_seen": "2026-06-05",
+      "next_expected": "2026-07-06",
+      "monthly_cost": 13.99,
+      "yearly_cost": 167.88,
+      "confidence": 0.92
+    },
+    {
+      "name": "Amazon Prime Jaar",
+      "frequency": "yearly",
+      "average_amount": 99.0,
+      "currency": "EUR",
+      "category": "Entertainment",
+      "occurrences": 2,
+      "months_active": 2,
+      "interval_days": 365,
+      "first_seen": "2025-09-01",
+      "last_seen": "2026-09-01",
+      "next_expected": "2027-09-01",
+      "monthly_cost": 8.25,
+      "yearly_cost": 99.0,
+      "confidence": 0.5
+    }
+  ]
+}
+```
+
+**Velden per abonnement**
+
+| Veld | Betekenis |
+| --- | --- |
+| `name` | Naam van de handelaar/tegenpartij (opgeschoond) |
+| `frequency` | `"monthly"` of `"yearly"` |
+| `average_amount` | Gemiddeld bedrag per betaling |
+| `currency` | Valuta (voorlopig altijd `"EUR"`) |
+| `category` | Categorie indien aanwezig in de data, anders `null` |
+| `occurrences` | Aantal betalingen in de dataset |
+| `months_active` | Aantal verschillende maanden waarin betaald |
+| `interval_days` | Mediaan interval tussen betalingen (dagen) |
+| `first_seen` / `last_seen` | Eerste/laatste betaling (`YYYY-MM-DD`) |
+| `next_expected` | Verwachte volgende betaling |
+| `monthly_cost` | Kost per maand (jaarlijks bedrag wordt door 12 gedeeld) |
+| `yearly_cost` | Kost per jaar (maandelijks bedrag × 12) |
+| `confidence` | Zekerheid van de detectie (0.0 – 1.0) |
+
+De website leest `subscriptions` om de lijst te tonen (filter op `frequency`), en
+`monthly_total` / `yearly_total` (+ `monthly_count` / `yearly_count`) voor het
+"slapend geld"-overzicht.
+
+#### `analyze_home_purchase` — spaar- en woonanalyse
+`functions/home_purchase.py` → output: `output/home_purchase__analyze_home_purchase.json`
+
+Combineert signalen om te bepalen of iemand best **begint te sparen** of een **huis kan
+kopen**, en hoeveel die persoon moet sparen voor een lening. Signalen:
+
+* **vast inkomen** — terugkerende maandelijkse inkomsten;
+* **Immoweb/vastgoed-activiteit** — transacties met bv. "immoweb" of "immo";
+* **overschrijvingen naar de spaarrekening** — op basis van naam/categorie;
+* **positieve spaarcapaciteit** — maandinkomen − maanduitgaven (spaargeld telt niet als kost);
+* **vaste kosten** — terugkerende uitgaven.
+
+Bestaat er een klant-kolom, dan krijgt **elke klant een eigen profiel**.
+
+**Aannames** (bovenaan `home_purchase.py` aanpasbaar): woningprijs €300.000, 10% down
+payment, 10% kosten, max. 40% schuldenlast, 3,5% rente, 25 jaar looptijd. Ze staan ook
+in het veld `assumptions`.
+
+```json
+{
+  "title": "Spaar- en woonanalyse",
+  "message": "1 profiel(en) geanalyseerd.",
+  "assumptions": { "target_home_price": 300000.0, "down_payment_pct": 0.1, "closing_costs_pct": 0.1,
+                   "max_debt_ratio": 0.4, "annual_interest_rate": 0.035, "loan_term_years": 25 },
+  "count": 1,
+  "profiles": [
+    {
+      "customer": "C001",
+      "signals": {
+        "fixed_income": true,
+        "monthly_income": 2500.0,
+        "income_sources": [ { "name": "Werkgever NV", "frequency": "monthly", "monthly_cost": 2500.0 } ],
+        "monthly_expenses": 914.5,
+        "monthly_fixed_costs": 914.0,
+        "savings_transfers": { "count": 6, "months": 6, "total": 1200.0,
+                               "monthly_average": 200.0, "frequent": true },
+        "real_estate_activity": { "count": 3, "total": 3.0, "active": true },
+        "savings_capacity": 1585.5,
+        "positive_savings_capacity": true
+      },
+      "advice": {
+        "status": "on_track",
+        "summary": "Je bent actief op vastgoed en spaart structureel. Met ±€1.586/maand spaar je in 38 maanden het benodigde startkapitaal bij elkaar.",
+        "target_home_price": 300000.0,
+        "down_payment_required": 30000.0,
+        "closing_costs": 30000.0,
+        "total_needed": 60000.0,
+        "max_monthly_payment": 1000.0,
+        "max_loan": 199750.88,
+        "affordable_home_price": 221945.42,
+        "gap_to_target": 78054.58,
+        "effective_monthly_saving": 1585.5,
+        "months_to_save": 38,
+        "ready_date": "2029-06-01"
+      }
+    }
+  ]
+}
+```
+
+**`advice.status`** is één van:
+`ready_to_buy` (kan doelwoning betalen), `on_track` (vast inkomen + positieve capaciteit),
+`start_saving` (kan sparen, maar nog niet op weg), `not_ready` (geen vast inkomen of
+negatieve capaciteit).
 
 ---
 
