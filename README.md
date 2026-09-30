@@ -83,77 +83,82 @@ We zijn met **4 mensen** en werken elk aan een eigen stuk, zodat we elkaar niet 
 
 | Persoon | Rol | Waar |
 | --- | --- | --- |
-| 1 | **Database** — fake-dataset genereren en onderhouden | `src/tectonic_hackaton_mang/database.py` → `data/fake.db` |
-| 2 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/functions/` |
-| 3 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/functions/` |
-| 4 | **Website** — KBC-app bouwen op de JSON-output | `src/tectonic_hackaton_mang/website/` |
+| 1 | **Database** — fake-dataset genereren en onderhouden | `src/tectonic_hackaton_mang/backend/data/` → `data/fake.db` |
+| 2 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/backend/signals/` |
+| 3 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/backend/signals/` |
+| 4 | **Website** — KBC-app bouwen op de JSON-output | `src/tectonic_hackaton_mang/frontend/` |
 
 ### Afspraken
-* **Eén bron van data:** de database-persoon beheert `database.py` + `data/fake.db`; de anderen lezen enkel via `dataset.py`.
-* **Eén functie per bestand:** de twee functie-makers werken elk in hun **eigen bestand** in `functions/` → geen merge-conflicten.
+* **Eén bron van data:** de database-persoon beheert `backend/data/generate.py` + `data/fake.db`; de anderen lezen enkel via `backend/data/readers.py`.
+* **Eén functie per bestand:** de twee functie-makers werken elk in hun **eigen bestand** in `backend/signals/` → geen merge-conflicten.
 * **Contract = JSON-output:** de website leest `output/*.json`. Wijzig je de vorm van een output, meld het meteen aan de website-persoon.
 * **Git:** eigen branch per stuk (`feat/db`, `feat/functie-x`, `feat/website`), via PR naar `main`. Nooit direct op `main`.
 * **Sync:** korte check of de output-contracten nog kloppen voor je iets wijzigt.
 
 ### Datastroom
 ```
-database.py ──► data/fake.db ──► dataset.py ──► functions/*.py ──► output/*.json ──► website
+data/generate.py ──► data/fake.db ──► data/readers.py ──► signals/*.py ──► output/*.json ──► frontend
 ```
 
 ---
 
 ## 🧱 Projectstructuur & functies bouwen
 
-De fake-dataset komt als **SQLite-bestand** in `data/fake.db`. Functies die de data
-verwerken schrijven **JSON-bestanden** naar `output/`, die de website inleest.
+Alle code leeft onder `src/tectonic_hackaton_mang/`, opgedeeld in een **backend** (Python)
+en een **frontend** (React-website). De fake-dataset staat als SQLite-bestand in
+`data/fake.db`; de signalen schrijven **JSON** naar `output/`, die de website inleest.
 
 ```
 src/tectonic_hackaton_mang/
-├── database.py            # 🗄️  genereert de fake-dataset (database-persoon)
-├── db.py                  # gedeelde helper: get_db() opent de dataset
-├── dataset.py             # typed readers voor de echte tabellen (klanten, abonnementen, ...)
-├── transactions.py        # gedeelde helpers: transacties detecteren + parsen
-├── functions/             # ⭐ hier bouwen de twee functie-makers, 1 bestand per persoon
-│   ├── __init__.py
-│   ├── voorbeeld.py       # sjabloon + voorbeeldfunctie
-│   ├── recurring_expenses.py  # terugkerende uitgaven / abonnementen
-│   └── home_purchase.py   # spaar- en woonanalyse
-├── export.py              # draait alle functies → schrijft output/*.json
-└── website/               # 🌐 KBC-website (website-persoon)
+├── __init__.py / __main__.py      # entrypoint: draait de export
+├── backend/                       # 🐍 Python-backend
+│   ├── config.py                  # paden (DB_PATH, OUTPUT_DIR)
+│   ├── export.py                  # draait alle signalen → output/*.json
+│   ├── data/                      # datalaag
+│   │   ├── connection.py          # get_db() opent de dataset
+│   │   ├── generate.py            # genereert data/fake.db (database-persoon)
+│   │   ├── readers.py             # typed readers per tabel (klanten, abonnementen, ...)
+│   │   └── transactions.py        # generieke transactie-helpers
+│   └── signals/                   # ⭐ hier bouwen de twee functie-makers, 1 bestand p.p.
+│       ├── __init__.py
+│       ├── example.py             # sjabloon + voorbeeldfunctie
+│       ├── recurring_expenses.py  # terugkerende uitgaven / abonnementen
+│       └── home_purchase.py       # spaar- en woonanalyse
+└── frontend/                      # 🌐 KBC-website (React + Vite, website-persoon)
 data/
-└── fake.db                # fake-dataset (SQLite, gegenereerd door database.py)
+└── fake.db                        # fake-dataset (SQLite, gegenereerd door generate.py)
 output/
-└── *.json                 # output voor de website (gegenereerd, niet gecommit)
+└── *.json                         # output voor de website (gegenereerd, niet gecommit)
 ```
 
-> 🗄️ **`database.py`** genereert `data/fake.db` (vaste seed, reproduceerbaar). Opnieuw
-> genereren: `uv run python -m tectonic_hackaton_mang.database`.
+> 🗄️ **`backend/data/generate.py`** genereert `data/fake.db` (vaste seed, reproduceerbaar).
+> Opnieuw genereren: `uv run python -m tectonic_hackaton_mang.backend.data.generate`.
 >
-> 🧰 **`dataset.py`** is de gedeelde leeslaag: `load_klanten`, `load_abonnementen`,
-> `load_spaar_interacties`, `load_zoekopdrachten`, `load_verzekeringen`. Gebruik die
-> i.p.v. zelf SQL te schrijven. `transactions.py` detecteert daarnaast generiek de
-> transactiekolommen en geeft `Transaction`-objecten terug.
+> 🧰 **`backend/data/readers.py`** is de gedeelde leeslaag: `load_klanten`,
+> `load_abonnementen`, `load_spaar_interacties`, `load_zoekopdrachten`, `load_verzekeringen`.
+> Gebruik die i.p.v. zelf SQL te schrijven. `transactions.py` detecteert daarnaast generiek
+> de transactiekolommen en geeft `Transaction`-objecten terug.
 
 > ⚠️ **Naam van het bestand:** gebruik `data/fake.db`, **niet** `db.sqlite3` — die
 > laatste staat in `.gitignore` en zou dus niet gedeeld worden via git.
 
 ### Zo werkt het
-1. **`db.py`** — `get_db()` geeft een SQLite-connectie waarvan de rijen via de kolomnaam te
-   lezen zijn (`row["bedrag"]`). **`dataset.py`** bouwt daarop en geeft kant-en-klare dicts
-   per tabel terug.
-2. **`functions/`** — de twee functie-makers werken elk in hun **eigen bestand**
+1. **`data/connection.py`** — `get_db()` geeft een SQLite-connectie waarvan de rijen via de
+   kolomnaam te lezen zijn (`row["bedrag"]`). **`data/readers.py`** bouwt daarop en geeft
+   kant-en-klare dicts per tabel terug.
+2. **`signals/`** — de twee functie-makers werken elk in hun **eigen bestand**
    (bv. `recurring_expenses.py`, `home_purchase.py`). Aparte bestanden = geen merge-conflicten.
-3. **`export.py`** — roept automatisch alle functies aan en schrijft per functie een JSON
-   naar `output/`, die de website inleest.
+3. **`backend/export.py`** — roept automatisch alle signalen aan en schrijft per functie een
+   JSON naar `output/`, die de website inleest.
 
 ### Een functie toevoegen
-1. Kopieer `functions/voorbeeld.py` naar `functions/<jouw_bestand>.py`.
+1. Kopieer `backend/signals/example.py` naar `backend/signals/<jouw_bestand>.py`.
 2. Schrijf je functie: krijgt de connectie binnen, geeft een **JSON-serialiseerbare dict**
    terug.
 3. Zet je functie in de lijst `FUNCTIONS` onderaan het bestand.
 
 ```python
-from ..dataset import load_abonnementen, reference_date
+from ..data.readers import load_abonnementen, reference_date
 
 def slapende_abonnementen(conn: sqlite3.Connection) -> dict:
     reference = reference_date(conn)
@@ -173,14 +178,18 @@ FUNCTIONS = [slapende_abonnementen]
 
 ### Runnen
 ```bash
-uv run python -m tectonic_hackaton_mang.export
+# Alle signalen draaien en JSON wegschrijven
+uv run python -m tectonic_hackaton_mang
+
+# (equivalent, expliciet pad naar de export)
+uv run python -m tectonic_hackaton_mang.backend.export
 ```
 Dit schrijft `output/<bestand>__<functie>.json`, klaar om door de website gelezen te worden.
 
 ### Beschikbare functies
 
 #### `find_recurring_expenses` — terugkerende uitgaven / abonnementen
-`functions/recurring_expenses.py` → output: `output/recurring_expenses__find_recurring_expenses.json`
+`backend/signals/recurring_expenses.py` → output: `output/recurring_expenses__find_recurring_expenses.json`
 
 Leest de echte **`abonnementen`**-tabel en geeft **per klant** een overzicht. Detecteert
 ook **slapende abonnementen**: nog actief, maar al **≥ 90 dagen** niet gebruikt (of nooit).
@@ -250,7 +259,7 @@ De website leest `customers` en toont voor de ingelogde klant de lijst met
 "stopzetten"-knop bij `dormant: true`.
 
 #### `analyze_home_purchase` — spaar- en woonanalyse
-`functions/home_purchase.py` → output: `output/home_purchase__analyze_home_purchase.json`
+`backend/signals/home_purchase.py` → output: `output/home_purchase__analyze_home_purchase.json`
 
 Combineert de echte signalen om te bepalen of iemand best **begint te sparen** of een
 **huis kan kopen**, en hoeveel die moet sparen. Bronnen: `klanten` (inkomen, spaardoel),
@@ -343,17 +352,17 @@ in het veld `assumptions`.
 ## ⚙️ Quickstart
 
 ```bash
-git clone [https://github.com/jouw-team/kbc-signal-engine.git](https://github.com/jouw-team/kbc-signal-engine.git)
-cd kbc-signal-engine
+git clone https://github.com/F-3-R-R-3/Tectonic-Hackaton-Mang.git
+cd Tectonic-Hackaton-Mang
 
-# Backend
-cd backend
-pip install -r requirements.txt
-python main.py
+# Backend: genereer de fake-dataset en draai de signalen → output/*.json
+uv run python -m tectonic_hackaton_mang.backend.data.generate
+uv run python -m tectonic_hackaton_mang
 
-# Frontend
-cd ../frontend
+# Frontend (KBC-website)
+cd src/tectonic_hackaton_mang/frontend
 npm install
 npm run dev
-# Instalatie tutortial
-vind je hier [SETUP.md](SETUP.md)
+```
+
+Installatietutorial vind je in [SETUP.md](SETUP.md).
