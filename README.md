@@ -346,13 +346,11 @@ in het veld `assumptions`.
 git clone [https://github.com/jouw-team/kbc-signal-engine.git](https://github.com/jouw-team/kbc-signal-engine.git)
 cd kbc-signal-engine
 
-# Backend
-cd backend
-pip install -r requirements.txt
-python main.py
+# API (leest data/fake.db via de functies in functions/)
+uv run python -m tectonic_hackaton_mang.server --port 8000
 
-# Frontend
-cd ../frontend
+# Website (React, in src/tectonic_hackaton_mang/website)
+cd src/tectonic_hackaton_mang/website
 npm install
 npm run dev
 # Instalatie tutortial

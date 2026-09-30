@@ -22,7 +22,7 @@ export default function Dashboard() {
     loading,
     signalStatus,
     history,
-    isMockMode,
+    user,
   } = useApp()
 
   if (loading || !activePersona) return <Loading />
@@ -38,9 +38,12 @@ export default function Dashboard() {
   return (
     <div className="stack">
       <div className="hero">
-        <span className="eyebrow" style={{ color: '#7fd4f5' }}>
-          KBC SignalEngine
-        </span>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <span className="eyebrow" style={{ color: '#7fd4f5' }}>
+            KBC SignalEngine
+          </span>
+          <span className="chip chip--green">Live data · data/fake.db</span>
+        </div>
         <h1>Hallo {activePersona.name.split(' ')[0]}, we zagen {open.length} dingen voor jou</h1>
         <p>
           Hieronder staat wat we detecteerden, wat het probleem is en hoe we het
@@ -56,6 +59,7 @@ export default function Dashboard() {
               {w}
             </span>
           ))}
+          {user && <span className="chip">@{user.username}</span>}
         </div>
       </div>
 
@@ -150,7 +154,7 @@ export default function Dashboard() {
         </>
       )}
 
-      {isMockMode && <KateFab text={kateText} />}
+      <KateFab text={kateText} />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { IconSearch, IconBell, IconMenu, IconClose } from './Icons'
 
@@ -11,8 +11,14 @@ const NAV = [
 ]
 
 export default function Navbar() {
-  const { activePersona } = useApp()
+  const { activePersona, isAuthenticated, logout } = useApp()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+
+  async function handleLogout() {
+    await logout()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className={`site-header ${open ? 'is-open' : ''}`}>
@@ -45,19 +51,37 @@ export default function Navbar() {
             <IconSearch size={16} />
             <input placeholder="Zoek in Mijn KBC" aria-label="Zoeken" />
           </label>
-          <button className="btn btn--ghost btn--sm" type="button" style={{ borderColor: 'rgba(255,255,255,.25)', color: '#fff' }}>
+          <button
+            className="btn btn--ghost btn--sm"
+            type="button"
+            style={{ borderColor: 'rgba(255,255,255,.25)', color: '#fff' }}
+          >
             <IconBell size={16} />
             Meldingen
           </button>
-          {activePersona && (
+
+          {isAuthenticated ? (
             <div className="header-user">
               <div className="header-user__name">
-                {activePersona.name}
-                <div className="header-user__sub">{activePersona.persona_label}</div>
+                {activePersona?.name}
+                <div className="header-user__sub">{activePersona?.persona_label}</div>
               </div>
-              <div className="avatar">{activePersona.initials}</div>
+              <div className="avatar">{activePersona?.initials}</div>
+              <button
+                className="btn btn--ghost btn--sm"
+                type="button"
+                style={{ borderColor: 'rgba(255,255,255,.25)', color: '#fff' }}
+                onClick={handleLogout}
+              >
+                Afmelden
+              </button>
             </div>
+          ) : (
+            <Link to="/login" className="btn btn--light btn--sm">
+              Aanmelden
+            </Link>
           )}
+
           <button
             className="nav-toggle"
             type="button"
