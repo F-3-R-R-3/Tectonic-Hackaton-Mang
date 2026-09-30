@@ -113,6 +113,61 @@ Stap 0 (contracten)
 
 ---
 
+## 🧱 Projectstructuur & functies bouwen
+
+De fake-dataset komt als **SQLite-bestand** in `data/fake.db`. Functies die de data
+verwerken schrijven **JSON-bestanden** naar `output/`, die de website inleest.
+
+```
+src/tectonic_hackaton_mang/
+├── db.py              # gedeelde helper: get_db() opent de dataset
+├── functions/         # ⭐ hier bouw je functies, 1 bestand per persoon/feature
+│   ├── __init__.py
+│   └── voorbeeld.py   # sjabloon + voorbeeldfunctie
+└── export.py          # draait alle functies → schrijft output/*.json
+data/
+└── fake.db            # fake-dataset (SQLite)
+output/
+└── *.json             # output voor de website (gegenereerd, niet gecommit)
+```
+
+> ⚠️ **Naam van het bestand:** gebruik `data/fake.db`, **niet** `db.sqlite3` — die
+> laatste staat in `.gitignore` en zou dus niet gedeeld worden via git.
+
+### Zo werkt het
+1. **`db.py`** — iedereen gebruikt dezelfde helper. `get_db()` geeft een SQLite-connectie
+   terug waarvan de rijen via de kolomnaam te lezen zijn (`row["amount"]`).
+2. **`functions/`** — elke persoon maakt zijn **eigen bestand** (bv. `abonnementen.py`).
+   Aparte bestanden = geen merge-conflicten.
+3. **`export.py`** — roept automatisch alle functies aan en schrijft per functie een JSON
+   naar `output/`.
+
+### Een functie toevoegen
+1. Kopieer `functions/voorbeeld.py` naar `functions/<jouw_bestand>.py`.
+2. Schrijf je functie: krijgt de connectie binnen, geeft een **JSON-serialiseerbare dict**
+   terug.
+3. Zet je functie in de lijst `FUNCTIONS` onderaan het bestand.
+
+```python
+def slapende_abonnementen(conn: sqlite3.Connection) -> dict:
+    rows = conn.execute("SELECT * FROM abonnementen WHERE laatste_gebruik < ...").fetchall()
+    return {
+        "title": "Slapend geldverlies",
+        "message": f"{len(rows)} abonnementen ongebruikt.",
+        "items": [dict(row) for row in rows],
+    }
+
+FUNCTIONS = [slapende_abonnementen]
+```
+
+### Runnen
+```bash
+uv run python -m tectonic_hackaton_mang.export
+```
+Dit schrijft `output/<bestand>__<functie>.json`, klaar om door de website gelezen te worden.
+
+---
+
 ## 🛠️ Tech Stack & Partners
 
 * **Back-end:** Python, FastAPI, Google Cloud (Vertex AI)[cite: 10]
