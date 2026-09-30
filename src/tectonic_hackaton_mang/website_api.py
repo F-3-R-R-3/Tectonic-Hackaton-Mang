@@ -100,6 +100,7 @@ def _signal_slapend_geld(block: dict) -> dict | None:
     )
     return {
         "type": "slapend_geld_abonnement",
+        "source_function": "find_recurring_expenses",
         "title": f"Je betaalt voor {len(dormant)} abonnement(en) die je amper gebruikt",
         "category": "slapend_geld",
         "signal_score": _score(yearly, 40, 700),
@@ -168,6 +169,7 @@ def _signal_verhuizing(klant: dict, verzekeringen: list[dict]) -> dict | None:
     yearly = round(sum(v["maandpremie"] for v in active) * 12, 2)
     return {
         "type": "verhuizing_zonder_adresupdate",
+        "source_function": "dataset.py (verzekeringen)",
         "title": "Verhuizing gedetecteerd, polisadressen niet bijgewerkt",
         "category": "administratie",
         "signal_score": _score(len(active), 1, 4, base=78, top=96),
@@ -237,6 +239,7 @@ def _signal_mobiliteit(klant: dict, transacties: list[Transaction], covered: int
     ]
     return {
         "type": "autokosten_onoverzichtelijk",
+        "source_function": "transactions.py + dataset.py",
         "title": "Totale autokost is onoverzichtelijk",
         "category": "mobiliteit",
         "signal_score": _score(monthly, 120, 600, base=62, top=88),
@@ -305,6 +308,7 @@ def _signal_student(klant: dict, block: dict) -> dict | None:
     ]
     return {
         "type": "slapend_geld_abonnement",
+        "source_function": "find_recurring_expenses",
         "title": "Studentenkorting blijft onbenut",
         "category": "slapend_geld",
         "signal_score": _score(yearly, 50, 400, base=52, top=74),
@@ -364,6 +368,7 @@ def _signal_sparen(profile: dict) -> dict | None:
     if status == "not_ready":
         return {
             "type": "geen_concreet_spaarplan",
+            "source_function": "analyze_home_purchase",
             "title": "Je vaste kosten blokkeren een spaarplan",
             "category": "sparen",
             "signal_score": 70,
@@ -458,6 +463,7 @@ def _signal_sparen(profile: dict) -> dict | None:
 
     return {
         "type": "geen_concreet_spaarplan",
+        "source_function": "analyze_home_purchase",
         "title": title,
         "category": "sparen",
         "signal_score": _score(capacity, 100, 1500, base=64, top=90),
