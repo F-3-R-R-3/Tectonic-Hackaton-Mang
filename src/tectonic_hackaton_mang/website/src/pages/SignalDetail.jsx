@@ -81,6 +81,11 @@ export default function SignalDetail() {
             <span className="chip chip--blue">
               <CatIcon size={14} /> {CATEGORY_LABEL[signal.category]}
             </span>
+            {signal.source_function && (
+              <span className="chip chip--purple">
+                Bron: {signal.source_function}
+              </span>
+            )}
             <span className={`chip chip--${signal.impact === 'hoog' ? 'red' : signal.impact === 'middel' ? 'orange' : 'blue'}`}>
               {IMPACT_LABEL[signal.impact]}
             </span>

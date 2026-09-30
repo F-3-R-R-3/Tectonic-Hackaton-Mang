@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import SignalCard from '../components/SignalCard'
 import FlowStrip from '../components/FlowStrip'
-import KateFab from '../components/KateFab'
 import { IconSignal, IconCheck, IconEuro } from '../components/Icons'
 
 function Loading() {
@@ -30,10 +29,6 @@ export default function Dashboard() {
   const open = rankedSignals.filter((s) => signalStatus(s.id) !== 'opgelost')
   const done = rankedSignals.filter((s) => signalStatus(s.id) === 'opgelost')
   const topScore = rankedSignals[0]?.signal_score ?? 0
-
-  const kateText = open.length
-    ? `Hallo ${activePersona.name}. Ik zie ${open.length} signalen voor jou. Het belangrijkste is: ${open[0].title}. ${open[0].problem.headline}. Ik stel voor: ${open[0].solution.cta}.`
-    : `Hallo ${activePersona.name}. Er zijn momenteel geen open signalen. Alles is opgelost.`
 
   return (
     <div className="stack">
@@ -153,8 +148,6 @@ export default function Dashboard() {
           </div>
         </>
       )}
-
-      <KateFab text={kateText} />
     </div>
   )
 }

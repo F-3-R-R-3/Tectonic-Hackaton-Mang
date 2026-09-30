@@ -132,13 +132,6 @@ export const IconSparkle = (p) => (
   </Svg>
 )
 
-export const IconMic = (p) => (
-  <Svg {...p}>
-    <rect x="9" y="3" width="6" height="11" rx="3" />
-    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-  </Svg>
-)
-
 export const IconMenu = (p) => (
   <Svg {...p}>
     <path d="M4 7h16M4 12h16M4 17h16" />

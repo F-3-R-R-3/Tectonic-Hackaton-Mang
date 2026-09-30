@@ -1348,43 +1348,6 @@ p {
 }
 
 /* =========================================================
-   Kate FAB (voice assistant)
-   ========================================================= */
-.kate-fab {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--kbc-blue);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-pill);
-  padding: 12px 20px 12px 14px;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: transform 0.15s ease;
-}
-.kate-fab:hover {
-  transform: translateY(-2px);
-}
-.kate-fab.is-speaking {
-  background: var(--green);
-}
-.kate-fab__dot {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: grid;
-  place-items: center;
-}
-
-/* =========================================================
    Utility / states
    ========================================================= */
 .loading {
