@@ -1,0 +1,36 @@
+KBC SignalEngine
+Tectonic Hackathon 2026 - Team Mang
+
+De opdracht
+
+Speel in op de noden van mensen nog voordat ze zelf weten dat ze die hebben. Voor KBC betekent dat: niet wachten tot een klant zelf met een vraag komt, maar op het juiste moment het juiste advies geven.
+
+Onze oplossing
+
+Wij bouwden SignalEngine, een nieuwe functie in de KBC-app die elke klant persoonlijk financieel advies geeft op basis van zijn eigen profiel. KBC weet al veel over zijn klanten: hun inkomsten en uitgaven, hun adres, hoe vaak en waarvoor ze de app openen, hun leeftijd, hun gezinssituatie, hun abonnementen en wat ze zoeken. SignalEngine brengt al die informatie samen en schat in wat een klant met zijn geld wil en nodig heeft, vaak nog voor de klant daar zelf bewust mee bezig is.
+
+Elke melding volgt dezelfde eenvoudige logica: signaal, probleem, oplossing. De app toont wat er in de gegevens opviel, legt uit waarom dat belangrijk is en biedt meteen een concrete actie aan die de klant in een paar klikken kan uitvoeren.
+
+Advies dat meegroeit met je situatie
+
+Wie krap bij kas zit, krijgt hulp om geld vrij te maken. SignalEngine spoort abonnementen op die al maanden niet meer gebruikt worden of die dubbel lopen, toont hoeveel die per jaar kosten en laat de klant ze meteen stopzetten.
+
+Wie meer verdient dan hij uitgeeft, krijgt advies over wat hij best met dat overschot doet: hoeveel hij maandelijks kan sparen, welk deel hij beter belegt, en tegen wanneer hij zijn beleggingen best terug vrijmaakt om een doel te halen.
+
+Wie een grote stap plant, krijgt een volledig plan. Een voorbeeld: een klant zoekt op Immoweb, bekijkt vaak zijn spaarrekening en zoekt in de app naar woonsparen. SignalEngine herkent dat die klant waarschijnlijk een huis wil kopen. Het controleert of dat haalbaar is met zijn inkomen en spaargeld, berekent hoeveel eigen inbreng nodig is, hoeveel hij kan lenen en tegen wanneer hij klaar is om te kopen. Daarbij hoort een voorstel voor de passende woonlening en voor de beleggingen die hij tegen dat moment best kan laten vrijkomen.
+
+Ook bij andere levensgebeurtenissen helpt de app. Na een verhuizing merkt SignalEngine bijvoorbeeld op dat de verzekeringspolissen nog op het oude adres staan en stelt het voor om die met één klik bij te werken.
+
+Persoonlijk en uitlegbaar
+
+Klanten worden ingedeeld in herkenbare profielen zoals student, jonge starter, alleenstaande professional, gezin met kinderen en gepensioneerde. Elk signaal krijgt een score op basis van impact en urgentie, zodat de klant alleen meldingen ziet die er echt toe doen en niet overspoeld wordt. Bij elke melding toont de app ook waarom ze verschijnt, zodat de klant het advies begrijpt en vertrouwt.
+
+Wat we gebouwd hebben
+
+Voor deze hackathon bouwden we een werkend prototype. We maakten een synthetische dataset met vijftig fictieve klanten, zodat er geen echte klantgegevens gebruikt worden. Een Python-backend analyseert die gegevens en detecteert de signalen. Een nagebouwde KBC-website in React toont ze aan de klant. In de demo kan je vijf verschillende persona's kiezen en telkens de volledige weg van signaal naar oplossing doorlopen.
+
+Vandaag werken in het prototype de abonnementen-audit met detectie van slapende abonnementen en de spaar- en woonanalyse, die per klant bepaalt of hij best begint te sparen, op koers ligt of klaar is om een huis te kopen. Het beleggingsadvies en het volledige leningsplan zijn nog niet helemaal uitgewerkt en vormen de volgende stap.
+
+Waarom dit werkt voor KBC
+
+Klanten krijgen hulp op het moment dat ze die nodig hebben, en niet pas wanneer het probleem al groot is. KBC wordt zo meer dan een plek waar je geld staat: een financiële coach die meedenkt. Dat versterkt het vertrouwen van de klant en opent op een natuurlijke manier de deur naar de juiste producten, zoals een spaarplan, een belegging of een woonlening, omdat ze aansluiten bij wat de klant echt nodig heeft.
