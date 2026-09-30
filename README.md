@@ -77,38 +77,27 @@ Personalisatie: welke meldingen en oplossingen tonen we per persona.
 
 ---
 
-## 👥 Plan van aanpak — 4 personen parallel
+## 👥 Team & werkverdeling
 
-We werken met **4 mensen tegelijk**, ongeveer 1 werkstroom per deel. Om elkaar niet te blokkeren bevriezen we eerst de **gedeelde contracten** en werken we daarna onafhankelijk verder.
+We zijn met **4 mensen** en werken elk aan een eigen stuk, zodat we elkaar niet blokkeren.
 
-### Stap 0 — Contracten bevriezen (samen, ±30 min)
-Voordat iemand begint, leggen we vast:
-1. **Datacontract** — exacte JSON-vorm van de gedeelde dataset (klant, transacties, abonnementen, profiel).
-2. **Signaal-/persona-contract** — hoe een geclassificeerde user + gedetecteerd signaal eruitziet.
-3. **API-contract** — welke endpoints de front-end nodig heeft (bv. `GET /users`, `GET /users/{id}/signals`).
-
-Zolang deze vastliggen kan iedereen met mock-data werken zonder op elkaar te wachten.
-
-### Werkstromen
-
-| Persoon | Werkstroom | Levert op | Blokkeert op |
-| --- | --- | --- | --- |
-| A | **Deel 1** — Fake dataset generator | `data/dataset.json` (1 gedeelde dataset) | Datacontract |
-| B | **Deel 2** — Classificatie + signal score | persona + signalen per user | Datacontract |
-| C | **Deel 3** — React UI (mock ➔ echte API) | werkende KBC-app met SignalEngine | API-contract |
-| D | **Deel 4** — Personalisatie + integratie (FastAPI) | ranking + "wat krijgt de user" logica | Signaal-contract |
+| Persoon | Rol | Waar |
+| --- | --- | --- |
+| 1 | **Database** — fake-dataset genereren en onderhouden | `src/tectonic_hackaton_mang/database.py` → `data/fake.db` |
+| 2 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/functions/` |
+| 3 | **Functies** — signalen detecteren uit de data | `src/tectonic_hackaton_mang/functions/` |
+| 4 | **Website** — KBC-app bouwen op de JSON-output | `src/tectonic_hackaton_mang/website/` |
 
 ### Afspraken
-* **Git:** per werkstroom een eigen branch (`feat/dataset`, `feat/classifier`, `feat/ui`, `feat/personalization`), via PR naar `main`. Nooit direct op `main`.
-* **Mock eerst:** de front-end (C) en integratie (D) gebruiken een gecommitte `mock.json` zolang de echte data/API nog niet klaar is.
-* **Dagelijkse sync:** korte check of de contracten nog kloppen; wijzig je een contract, meld het meteen aan de groep.
-* **Demo-verhaallijn:** 1 persona volledig uitwerken tot een klikbare flow is belangrijker dan alle persona's half.
+* **Eén bron van data:** de database-persoon beheert `database.py` + `data/fake.db`; de anderen lezen enkel via `dataset.py`.
+* **Eén functie per bestand:** de twee functie-makers werken elk in hun **eigen bestand** in `functions/` → geen merge-conflicten.
+* **Contract = JSON-output:** de website leest `output/*.json`. Wijzig je de vorm van een output, meld het meteen aan de website-persoon.
+* **Git:** eigen branch per stuk (`feat/db`, `feat/functie-x`, `feat/website`), via PR naar `main`. Nooit direct op `main`.
+* **Sync:** korte check of de output-contracten nog kloppen voor je iets wijzigt.
 
-### Volgorde & afhankelijkheden
+### Datastroom
 ```
-Stap 0 (contracten)
-   ├─► A: dataset ──► B: classificatie ──► D: personalisatie ──► C: UI integreert
-   └─► C: UI-bouw op mock.json (parallel vanaf minuut 1)
+database.py ──► data/fake.db ──► dataset.py ──► functions/*.py ──► output/*.json ──► website
 ```
 
 ---
@@ -120,34 +109,42 @@ verwerken schrijven **JSON-bestanden** naar `output/`, die de website inleest.
 
 ```
 src/tectonic_hackaton_mang/
+├── database.py            # 🗄️  genereert de fake-dataset (database-persoon)
 ├── db.py                  # gedeelde helper: get_db() opent de dataset
-├── transactions.py        # gedeelde helpers: tabel/kolommen detecteren + parsen
-├── functions/             # ⭐ hier bouw je functies, 1 bestand per persoon/feature
+├── dataset.py             # typed readers voor de echte tabellen (klanten, abonnementen, ...)
+├── transactions.py        # gedeelde helpers: transacties detecteren + parsen
+├── functions/             # ⭐ hier bouwen de twee functie-makers, 1 bestand per persoon
 │   ├── __init__.py
 │   ├── voorbeeld.py       # sjabloon + voorbeeldfunctie
 │   ├── recurring_expenses.py  # terugkerende uitgaven / abonnementen
 │   └── home_purchase.py   # spaar- en woonanalyse
-└── export.py              # draait alle functies → schrijft output/*.json
+├── export.py              # draait alle functies → schrijft output/*.json
+└── website/               # 🌐 KBC-website (website-persoon)
 data/
-└── fake.db                # fake-dataset (SQLite)
+└── fake.db                # fake-dataset (SQLite, gegenereerd door database.py)
 output/
 └── *.json                 # output voor de website (gegenereerd, niet gecommit)
 ```
 
-> 🧰 **`transactions.py`** is de gedeelde laag: `load_transactions(conn)` detecteert
-> zelf de transactietabel en de kolommen (NL/EN) en geeft `Transaction`-objecten terug.
-> Gebruik die i.p.v. zelf SQL-kolomnamen te raden.
+> 🗄️ **`database.py`** genereert `data/fake.db` (vaste seed, reproduceerbaar). Opnieuw
+> genereren: `uv run python -m tectonic_hackaton_mang.database`.
+>
+> 🧰 **`dataset.py`** is de gedeelde leeslaag: `load_klanten`, `load_abonnementen`,
+> `load_spaar_interacties`, `load_zoekopdrachten`, `load_verzekeringen`. Gebruik die
+> i.p.v. zelf SQL te schrijven. `transactions.py` detecteert daarnaast generiek de
+> transactiekolommen en geeft `Transaction`-objecten terug.
 
 > ⚠️ **Naam van het bestand:** gebruik `data/fake.db`, **niet** `db.sqlite3` — die
 > laatste staat in `.gitignore` en zou dus niet gedeeld worden via git.
 
 ### Zo werkt het
-1. **`db.py`** — iedereen gebruikt dezelfde helper. `get_db()` geeft een SQLite-connectie
-   terug waarvan de rijen via de kolomnaam te lezen zijn (`row["amount"]`).
-2. **`functions/`** — elke persoon maakt zijn **eigen bestand** (bv. `abonnementen.py`).
-   Aparte bestanden = geen merge-conflicten.
+1. **`db.py`** — `get_db()` geeft een SQLite-connectie waarvan de rijen via de kolomnaam te
+   lezen zijn (`row["bedrag"]`). **`dataset.py`** bouwt daarop en geeft kant-en-klare dicts
+   per tabel terug.
+2. **`functions/`** — de twee functie-makers werken elk in hun **eigen bestand**
+   (bv. `recurring_expenses.py`, `home_purchase.py`). Aparte bestanden = geen merge-conflicten.
 3. **`export.py`** — roept automatisch alle functies aan en schrijft per functie een JSON
-   naar `output/`.
+   naar `output/`, die de website inleest.
 
 ### Een functie toevoegen
 1. Kopieer `functions/voorbeeld.py` naar `functions/<jouw_bestand>.py`.
@@ -156,12 +153,19 @@ output/
 3. Zet je functie in de lijst `FUNCTIONS` onderaan het bestand.
 
 ```python
+from ..dataset import load_abonnementen, reference_date
+
 def slapende_abonnementen(conn: sqlite3.Connection) -> dict:
-    rows = conn.execute("SELECT * FROM abonnementen WHERE laatste_gebruik < ...").fetchall()
+    reference = reference_date(conn)
+    slapend = [
+        a for a in load_abonnementen(conn)
+        if a["actief"] and (a["laatste_gebruik"] is None
+                            or (reference - a["laatste_gebruik"]).days >= 90)
+    ]
     return {
         "title": "Slapend geldverlies",
-        "message": f"{len(rows)} abonnementen ongebruikt.",
-        "items": [dict(row) for row in rows],
+        "message": f"{len(slapend)} slapende abonnementen.",
+        "items": [{"klant_id": a["klant_id"], "naam": a["naam"], "bedrag": a["bedrag"]} for a in slapend],
     }
 
 FUNCTIONS = [slapende_abonnementen]
@@ -178,52 +182,46 @@ Dit schrijft `output/<bestand>__<functie>.json`, klaar om door de website geleze
 #### `find_recurring_expenses` — terugkerende uitgaven / abonnementen
 `functions/recurring_expenses.py` → output: `output/recurring_expenses__find_recurring_expenses.json`
 
-Detecteert **maandelijkse én jaarlijkse** terugkerende uitgaven (abonnementen) op basis
-van historiek. Ze is **schema-onafhankelijk**: de functie zoekt zelf de transactietabel en
-de kolommen voor datum, bedrag, naam en (optioneel) categorie, met zowel NL- als EN-kolomnamen.
+Leest de echte **`abonnementen`**-tabel en geeft **per klant** een overzicht. Detecteert
+ook **slapende abonnementen**: nog actief, maar al **≥ 90 dagen** niet gebruikt (of nooit).
 
 ```json
 {
   "title": "Terugkerende uitgaven",
-  "message": "3 terugkerende uitgaven gevonden (2 maandelijks, 1 jaarlijks).",
-  "source_table": "transacties",
-  "count": 3,
-  "monthly_count": 2,
-  "yearly_count": 1,
-  "monthly_total": 33.23,
-  "yearly_total": 398.76,
-  "subscriptions": [
+  "message": "131 abonnementen bij 50 klanten (36 slapend).",
+  "source_table": "abonnementen",
+  "reference_date": "2026-09-30",
+  "count": 131,
+  "customer_count": 50,
+  "monthly_total": 2438.16,
+  "yearly_total": 29257.92,
+  "dormant_count": 36,
+  "customers": [
     {
-      "name": "NETFLIX.COM",
-      "frequency": "monthly",
-      "average_amount": 13.99,
-      "currency": "EUR",
-      "category": "Entertainment",
-      "occurrences": 6,
-      "months_active": 6,
-      "interval_days": 31,
-      "first_seen": "2026-01-05",
-      "last_seen": "2026-06-05",
-      "next_expected": "2026-07-06",
-      "monthly_cost": 13.99,
-      "yearly_cost": 167.88,
-      "confidence": 0.92
-    },
-    {
-      "name": "Amazon Prime Jaar",
-      "frequency": "yearly",
-      "average_amount": 99.0,
-      "currency": "EUR",
-      "category": "Entertainment",
-      "occurrences": 2,
-      "months_active": 2,
-      "interval_days": 365,
-      "first_seen": "2025-09-01",
-      "last_seen": "2026-09-01",
-      "next_expected": "2027-09-01",
-      "monthly_cost": 8.25,
-      "yearly_cost": 99.0,
-      "confidence": 0.5
+      "customer": 1,
+      "customer_name": "Emma Peeters",
+      "monthly_total": 85.94,
+      "yearly_total": 1031.28,
+      "monthly_count": 6,
+      "yearly_count": 0,
+      "dormant_count": 4,
+      "dormant_monthly_total": 76.96,
+      "subscriptions": [
+        {
+          "name": "Basic-Fit",
+          "frequency": "monthly",
+          "amount": 26.99,
+          "currency": "EUR",
+          "category": "sport",
+          "active": true,
+          "start_date": "2026-01-23",
+          "last_used": "2026-04-03",
+          "days_since_last_use": 180,
+          "dormant": true,
+          "monthly_cost": 26.99,
+          "yearly_cost": 323.88
+        }
+      ]
     }
   ]
 }
@@ -233,37 +231,32 @@ de kolommen voor datum, bedrag, naam en (optioneel) categorie, met zowel NL- als
 
 | Veld | Betekenis |
 | --- | --- |
-| `name` | Naam van de handelaar/tegenpartij (opgeschoond) |
+| `name` | Naam van het abonnement |
 | `frequency` | `"monthly"` of `"yearly"` |
-| `average_amount` | Gemiddeld bedrag per betaling |
+| `amount` | Bedrag per betaling (zoals in de data) |
 | `currency` | Valuta (voorlopig altijd `"EUR"`) |
-| `category` | Categorie indien aanwezig in de data, anders `null` |
-| `occurrences` | Aantal betalingen in de dataset |
-| `months_active` | Aantal verschillende maanden waarin betaald |
-| `interval_days` | Mediaan interval tussen betalingen (dagen) |
-| `first_seen` / `last_seen` | Eerste/laatste betaling (`YYYY-MM-DD`) |
-| `next_expected` | Verwachte volgende betaling |
-| `monthly_cost` | Kost per maand (jaarlijks bedrag wordt door 12 gedeeld) |
+| `category` | `streaming` / `sport` / `software` / `mobiliteit` / `overig` |
+| `active` | Nog actief volgens de data |
+| `start_date` | Startdatum van het abonnement |
+| `last_used` | Laatste gebruik (`null` = nooit) |
+| `days_since_last_use` | Dagen sinds laatste gebruik (`null` = nooit) |
+| `dormant` | Slapend: actief maar ≥ 90 dagen ongebruikt |
+| `monthly_cost` | Kost per maand (jaarlijks bedrag ÷ 12) |
 | `yearly_cost` | Kost per jaar (maandelijks bedrag × 12) |
-| `confidence` | Zekerheid van de detectie (0.0 – 1.0) |
 
-De website leest `subscriptions` om de lijst te tonen (filter op `frequency`), en
-`monthly_total` / `yearly_total` (+ `monthly_count` / `yearly_count`) voor het
-"slapend geld"-overzicht.
+Per klant: `monthly_total` / `yearly_total` (enkel actieve abonnementen),
+`monthly_count` / `yearly_count`, `dormant_count` en `dormant_monthly_total`.
+De website leest `customers` en toont voor de ingelogde klant de lijst met
+"stopzetten"-knop bij `dormant: true`.
 
 #### `analyze_home_purchase` — spaar- en woonanalyse
 `functions/home_purchase.py` → output: `output/home_purchase__analyze_home_purchase.json`
 
-Combineert signalen om te bepalen of iemand best **begint te sparen** of een **huis kan
-kopen**, en hoeveel die persoon moet sparen voor een lening. Signalen:
-
-* **vast inkomen** — terugkerende maandelijkse inkomsten;
-* **Immoweb/vastgoed-activiteit** — transacties met bv. "immoweb" of "immo";
-* **overschrijvingen naar de spaarrekening** — op basis van naam/categorie;
-* **positieve spaarcapaciteit** — maandinkomen − maanduitgaven (spaargeld telt niet als kost);
-* **vaste kosten** — terugkerende uitgaven.
-
-Bestaat er een klant-kolom, dan krijgt **elke klant een eigen profiel**.
+Combineert de echte signalen om te bepalen of iemand best **begint te sparen** of een
+**huis kan kopen**, en hoeveel die moet sparen. Bronnen: `klanten` (inkomen, spaardoel),
+`transacties` (uitgaven + terugkerend inkomen), `abonnementen` + `verzekeringen` (vaste
+kosten), `spaarrekening_interacties` (stortingen, saldo, 'bekeken') en `zoekopdrachten`
+(interesse in wonen/sparen, bv. via Immoweb of Kate). **Elke klant krijgt een profiel.**
 
 **Aannames** (bovenaan `home_purchase.py` aanpasbaar): woningprijs €300.000, 10% down
 payment, 10% kosten, max. 40% schuldenlast, 3,5% rente, 25 jaar looptijd. Ze staan ook
@@ -272,39 +265,51 @@ in het veld `assumptions`.
 ```json
 {
   "title": "Spaar- en woonanalyse",
-  "message": "1 profiel(en) geanalyseerd.",
+  "message": "50 profiel(en) geanalyseerd.",
+  "source_table": "klanten + transacties + abonnementen + spaarrekening_interacties",
+  "reference_date": "2026-09-30",
   "assumptions": { "target_home_price": 300000.0, "down_payment_pct": 0.1, "closing_costs_pct": 0.1,
                    "max_debt_ratio": 0.4, "annual_interest_rate": 0.035, "loan_term_years": 25 },
-  "count": 1,
+  "count": 50,
   "profiles": [
     {
-      "customer": "C001",
+      "customer": 2,
+      "customer_name": "Thomas Vermeulen",
       "signals": {
         "fixed_income": true,
-        "monthly_income": 2500.0,
-        "income_sources": [ { "name": "Werkgever NV", "frequency": "monthly", "monthly_cost": 2500.0 } ],
-        "monthly_expenses": 914.5,
-        "monthly_fixed_costs": 914.0,
-        "savings_transfers": { "count": 6, "months": 6, "total": 1200.0,
-                               "monthly_average": 200.0, "frequent": true },
-        "real_estate_activity": { "count": 3, "total": 3.0, "active": true },
-        "savings_capacity": 1585.5,
-        "positive_savings_capacity": true
+        "monthly_income": 2650.0,
+        "income_sources": [ { "name": "TechStart NV", "frequency": "monthly", "monthly_cost": 2650.0 } ],
+        "monthly_expenses": 1442.34,
+        "monthly_fixed_costs": 33.98,
+        "subscriptions_monthly": 33.98,
+        "insurance_monthly": 0,
+        "savings_activity": { "deposit_count": 1, "deposit_months": 1, "deposit_total": 100.0,
+                              "monthly_average": 8.33, "frequent": false, "views": 7,
+                              "current_balance": 1850.0, "max_balance": 1900.0 },
+        "savings_capacity": 1207.66,
+        "positive_savings_capacity": true,
+        "wants_house": true,
+        "savings_goal": "huis",
+        "personal_goal_amount": 25000.0,
+        "housing_queries": ["spaarrekening huis kopen", "woonsparen KBC"],
+        "saving_queries": ["spaarrekening huis kopen", "hoeveel sparen per maand", "woonsparen KBC", "spaardoel aanmaken", "rente spaarboekje"]
       },
       "advice": {
         "status": "on_track",
-        "summary": "Je bent actief op vastgoed en spaart structureel. Met ±€1.586/maand spaar je in 38 maanden het benodigde startkapitaal bij elkaar.",
+        "summary": "Je wil een woning en spaart ±€1.208/maand. Met je huidige spaargeld (±€1.850) is het doel van €25.000 bereikt in 20 maanden.",
         "target_home_price": 300000.0,
         "down_payment_required": 30000.0,
         "closing_costs": 30000.0,
-        "total_needed": 60000.0,
-        "max_monthly_payment": 1000.0,
-        "max_loan": 199750.88,
-        "affordable_home_price": 221945.42,
-        "gap_to_target": 78054.58,
-        "effective_monthly_saving": 1585.5,
-        "months_to_save": 38,
-        "ready_date": "2029-06-01"
+        "start_capital_needed": 60000.0,
+        "savings_target": 25000.0,
+        "current_savings": 1850.0,
+        "max_monthly_payment": 1060.0,
+        "max_loan": 211735.94,
+        "affordable_home_price": 235262.16,
+        "gap_to_target": 64737.84,
+        "effective_monthly_saving": 1207.66,
+        "months_to_save": 20,
+        "ready_date": "2028-05-01"
       }
     }
   ]
@@ -312,9 +317,9 @@ in het veld `assumptions`.
 ```
 
 **`advice.status`** is één van:
-`ready_to_buy` (kan doelwoning betalen), `on_track` (vast inkomen + positieve capaciteit),
-`start_saving` (kan sparen, maar nog niet op weg), `not_ready` (geen vast inkomen of
-negatieve capaciteit).
+`ready_to_buy` (kan doelwoning + down payment betalen), `on_track` (wil een huis en spaart),
+`saving_for_goal` (spaart voor een ander doel, bv. vakantie of pensioen), `start_saving`
+(kan sparen, geen concreet doel), `not_ready` (geen vast inkomen of negatieve capaciteit).
 
 ---
 

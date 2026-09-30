@@ -1,62 +1,104 @@
-"""Detecteer terugkerende uitgaven (abonnementen) in de dataset.
+"""Terugkerende uitgaven (abonnementen) uit de fake-dataset.
 
-Zowel **maandelijkse** als **jaarlijkse** terugkerende uitgaven worden herkend.
-De functie is schema-onafhankelijk (zie ``tectonic_hackaton_mang.transactions``).
+Leest de echte ``abonnementen``-tabel (zie ``database.py``): naam, bedrag,
+frequentie, start_datum, laatste_gebruik, actief en categorie. Detecteert ook
+**slapende** abonnementen: actief maar al een tijd niet gebruikt.
 
-Output: een dict met een lijst ``subscriptions`` die de website kan inlezen.
-Elk item heeft een ``frequency`` (``"monthly"`` of ``"yearly"``).
+Output: per klant een overzicht met de abonnementen, klaar voor de website.
 """
 
 from __future__ import annotations
 
 import sqlite3
+from collections import defaultdict
 
-from ..transactions import expenses_are_negative, load_transactions, recurring_groups
+from ..dataset import klant_naam, load_abonnementen, load_klanten, reference_date
+
+DORMANT_DAYS = 90
+
+
+def _subscription(row: dict, reference) -> dict:
+    amount = row["bedrag"]
+    is_yearly = row["frequentie"] == "jaarlijks"
+    monthly_cost = amount / 12 if is_yearly else amount
+    last_used = row["laatste_gebruik"]
+    days_since = (reference - last_used).days if last_used else None
+    dormant = row["actief"] and (last_used is None or days_since >= DORMANT_DAYS)
+    return {
+        "name": row["naam"],
+        "frequency": "yearly" if is_yearly else "monthly",
+        "amount": round(amount, 2),
+        "currency": "EUR",
+        "category": row["categorie"],
+        "active": row["actief"],
+        "start_date": row["start_datum"].isoformat() if row["start_datum"] else None,
+        "last_used": last_used.isoformat() if last_used else None,
+        "days_since_last_use": days_since,
+        "dormant": dormant,
+        "monthly_cost": round(monthly_cost, 2),
+        "yearly_cost": round(monthly_cost * 12, 2),
+    }
+
+
+def _customer_block(klant_id: int, klant: dict | None, rows: list[dict], reference) -> dict:
+    subscriptions = sorted(
+        (_subscription(row, reference) for row in rows),
+        key=lambda s: s["yearly_cost"],
+        reverse=True,
+    )
+    active = [s for s in subscriptions if s["active"]]
+    dormant = [s for s in active if s["dormant"]]
+    return {
+        "customer": klant_id,
+        "customer_name": klant_naam(klant),
+        "monthly_total": round(sum(s["monthly_cost"] for s in active), 2),
+        "yearly_total": round(sum(s["yearly_cost"] for s in active), 2),
+        "monthly_count": sum(1 for s in active if s["frequency"] == "monthly"),
+        "yearly_count": sum(1 for s in active if s["frequency"] == "yearly"),
+        "dormant_count": len(dormant),
+        "dormant_monthly_total": round(sum(s["monthly_cost"] for s in dormant), 2),
+        "subscriptions": subscriptions,
+    }
 
 
 def find_recurring_expenses(conn: sqlite3.Connection) -> dict:
-    """Vind maandelijkse en jaarlijkse terugkerende uitgaven (abonnementen)."""
-    loaded = load_transactions(conn)
-    if loaded is None:
+    """Lijst van terugkerende uitgaven per klant, incl. slapende abonnementen."""
+    klanten = load_klanten(conn)
+    rows = load_abonnementen(conn)
+    if not rows:
         return {
             "title": "Terugkerende uitgaven",
-            "message": "Geen transactietabel gevonden in de dataset.",
+            "message": "Geen abonnementen gevonden in de dataset.",
             "count": 0,
-            "monthly_count": 0,
-            "yearly_count": 0,
-            "subscriptions": [],
-        }
-    table, transactions = loaded
-    if not transactions:
-        return {
-            "title": "Terugkerende uitgaven",
-            "message": f"Geen bruikbare transacties gevonden in '{table}'.",
-            "count": 0,
-            "monthly_count": 0,
-            "yearly_count": 0,
-            "subscriptions": [],
+            "customers": [],
         }
 
-    negatives = expenses_are_negative(transactions)
-    expenses = [t for t in transactions if (t.amount < 0) == negatives]
-    subscriptions = recurring_groups(expenses)
-    subscriptions.sort(key=lambda s: s["yearly_cost"], reverse=True)
-    monthly_count = sum(1 for s in subscriptions if s["frequency"] == "monthly")
-    yearly_count = sum(1 for s in subscriptions if s["frequency"] == "yearly")
-    monthly_total = round(sum(s["monthly_cost"] for s in subscriptions), 2)
+    reference = reference_date(conn)
+    grouped: dict[int, list[dict]] = defaultdict(list)
+    for row in rows:
+        grouped[int(row["klant_id"])].append(row)
+
+    customers = [
+        _customer_block(klant_id, klanten.get(klant_id), items, reference)
+        for klant_id, items in sorted(grouped.items())
+    ]
+
+    total_monthly = round(sum(c["monthly_total"] for c in customers), 2)
+    dormant_count = sum(c["dormant_count"] for c in customers)
     return {
         "title": "Terugkerende uitgaven",
         "message": (
-            f"{len(subscriptions)} terugkerende uitgaven gevonden "
-            f"({monthly_count} maandelijks, {yearly_count} jaarlijks)."
+            f"{sum(len(c['subscriptions']) for c in customers)} abonnementen bij "
+            f"{len(customers)} klanten ({dormant_count} slapend)."
         ),
-        "source_table": table,
-        "count": len(subscriptions),
-        "monthly_count": monthly_count,
-        "yearly_count": yearly_count,
-        "monthly_total": monthly_total,
-        "yearly_total": round(monthly_total * 12, 2),
-        "subscriptions": subscriptions,
+        "source_table": "abonnementen",
+        "reference_date": reference.isoformat(),
+        "count": sum(len(c["subscriptions"]) for c in customers),
+        "customer_count": len(customers),
+        "monthly_total": total_monthly,
+        "yearly_total": round(total_monthly * 12, 2),
+        "dormant_count": dormant_count,
+        "customers": customers,
     }
 
 
