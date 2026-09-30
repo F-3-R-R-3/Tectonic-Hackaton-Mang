@@ -42,20 +42,6 @@ export default function SignalCard({ signal, status, onOpen }) {
             </span>
           )}
         </div>
-
-        <div className="mini-flow">
-          <span>
-            <i className="dot" /> Signaal
-          </span>
-          <span className="sep">→</span>
-          <span>
-            <i className="dot dot--problem" /> Probleem
-          </span>
-          <span className="sep">→</span>
-          <span>
-            <i className="dot dot--solution" /> {signal.solution.title}
-          </span>
-        </div>
       </div>
 
       <div className="signal-card__side">

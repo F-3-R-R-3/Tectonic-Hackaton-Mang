@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom'
 import {
-  IconSignal,
-  IconProblem,
   IconSolution,
   IconArrowRight,
   IconShield,
@@ -31,9 +29,6 @@ export default function Landing() {
               <Link to="/app" className="btn btn--light btn--lg">
                 Open mijn SignalEngine <IconArrowRight size={18} />
               </Link>
-              <a href="#werking" className="btn btn--ghost btn--lg" style={{ color: '#fff', borderColor: 'rgba(255,255,255,.35)' }}>
-                Bekijk hoe het werkt
-              </a>
             </div>
             <div className="landing-stats">
               <div>
@@ -77,54 +72,6 @@ export default function Landing() {
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-section" id="werking">
-        <div className="container">
-          <div className="center">
-            <span className="eyebrow" style={{ justifyContent: 'center' }}>
-              De flow
-            </span>
-            <h2>Signaal → Probleem → Oplossing</h2>
-            <p style={{ maxWidth: 620, margin: '0 auto' }}>
-              Elke melding in SignalEngine volgt exact dezelfde, uitlegbare keten.
-              Nooit een melding zonder oplossing.
-            </p>
-          </div>
-
-          <div className="feature-grid">
-            <div className="feature">
-              <div className="feature__ico">
-                <IconSignal size={24} />
-              </div>
-              <h3>1. Signaal</h3>
-              <p>
-                We zien een patroon: een verhuisbeweging, dubbele abonnementen, een
-                spaaroverschot dat blijft liggen, of autokosten die uit de hand lopen.
-              </p>
-            </div>
-            <div className="feature">
-              <div className="feature__ico" style={{ background: 'var(--orange-soft)', color: 'var(--orange)' }}>
-                <IconProblem size={24} />
-              </div>
-              <h3>2. Probleem</h3>
-              <p>
-                Elk signaal krijgt een heldere uitleg: wat het risico is, wat het je
-                kost, en waarom het nu telt. Uitlegbaar, geen black box.
-              </p>
-            </div>
-            <div className="feature">
-              <div className="feature__ico" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}>
-                <IconSolution size={24} />
-              </div>
-              <h3>3. Oplossing</h3>
-              <p>
-                Eén directe actie: adressen syncen, abonnement stoppen, spaarplan
-                starten. Jij klikt, KBC regelt de rest.
-              </p>
             </div>
           </div>
         </div>

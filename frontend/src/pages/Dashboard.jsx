@@ -1,9 +1,8 @@
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import SignalCard from '../components/SignalCard'
-import FlowStrip from '../components/FlowStrip'
 import KateFab from '../components/KateFab'
-import { IconSignal, IconCheck, IconEuro } from '../components/Icons'
+import { IconSignal, IconCheck } from '../components/Icons'
 
 function Loading() {
   return (
@@ -21,14 +20,12 @@ export default function Dashboard() {
     rankedSignals,
     loading,
     signalStatus,
-    history,
     isMockMode,
   } = useApp()
 
   if (loading || !activePersona) return <Loading />
 
   const open = rankedSignals.filter((s) => signalStatus(s.id) !== 'opgelost')
-  const done = rankedSignals.filter((s) => signalStatus(s.id) === 'opgelost')
   const topScore = rankedSignals[0]?.signal_score ?? 0
 
   const kateText = open.length
@@ -42,10 +39,7 @@ export default function Dashboard() {
           KBC SignalEngine
         </span>
         <h1>Hallo {activePersona.name.split(' ')[0]}, we zagen {open.length} dingen voor jou</h1>
-        <p>
-          Hieronder staat wat we detecteerden, wat het probleem is en hoe we het
-          meteen oplossen. Je hoeft alleen te beslissen.
-        </p>
+        <p>Hieronder zie je wat we in jouw data hebben gevonden.</p>
         <div className="hero__chips">
           <span className="chip">{activePersona.persona_label}</span>
           <span className="chip">
@@ -61,10 +55,8 @@ export default function Dashboard() {
 
       <div className="stat-grid">
         <div className="stat">
-          <div className="stat__label">Open signalen</div>
-          <div className="stat__value">
-            {open.length} <small>van {rankedSignals.length}</small>
-          </div>
+          <div className="stat__label">Gevonden signalen</div>
+          <div className="stat__value">{open.length}</div>
         </div>
         <div className="stat">
           <div className="stat__label">Hoogste signaalscore</div>
@@ -72,13 +64,7 @@ export default function Dashboard() {
             {topScore} <small>/ 100</small>
           </div>
         </div>
-        <div className="stat">
-          <div className="stat__label">Afgehandeld in deze sessie</div>
-          <div className="stat__value">{done.length}</div>
-        </div>
       </div>
-
-      <FlowStrip />
 
       <div className="section-head">
         <h2>
@@ -108,46 +94,6 @@ export default function Dashboard() {
             />
           ))}
         </div>
-      )}
-
-      {done.length > 0 && (
-        <>
-          <div className="section-head" style={{ marginTop: 10 }}>
-            <h2>
-              <IconCheck size={20} /> Opgelost
-            </h2>
-          </div>
-          <div className="signal-list">
-            {done.map((signal) => (
-              <SignalCard
-                key={signal.id}
-                signal={signal}
-                status="opgelost"
-                onOpen={(id) => navigate(`/app/signaal/${id}`)}
-              />
-            ))}
-          </div>
-        </>
-      )}
-
-      {history.length > 0 && (
-        <>
-          <div className="section-head" style={{ marginTop: 10 }}>
-            <h2>
-              <IconEuro size={20} /> Uitgevoerde acties
-            </h2>
-          </div>
-          <div className="card card--pad">
-            <div className="stack" style={{ gap: 12 }}>
-              {history.map((h, i) => (
-                <div className="evidence__row" key={`${h.signalId}-${i}`}>
-                  <span className="evidence__label">{h.title}</span>
-                  <span className="evidence__value">{h.benefit}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </>
       )}
 
       {isMockMode && <KateFab text={kateText} />}
