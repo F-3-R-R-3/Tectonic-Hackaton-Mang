@@ -219,3 +219,6 @@ __marimo__/
 
 # Gegenereerde JSON-output (export.py)
 /output/*.json
+
+# Claude Code (lokale worktrees/instellingen)
+.claude/
