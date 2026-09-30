@@ -7,10 +7,13 @@ authors = [
     { name = "F3RR3", email = "179852030+F-3-R-R-3@users.noreply.github.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+]
 
 [project.scripts]
-tectonic-hackaton-mang = "tectonic_hackaton_mang:main"
+tectonic-hackaton-mang = "tectonic_hackaton_mang.main:main"
 
 [build-system]
 requires = ["uv_build>=0.12.17,<0.13.0"]
