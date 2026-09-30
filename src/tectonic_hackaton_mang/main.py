@@ -4,16 +4,21 @@ Dit bestand bevat géén business-logica. Het importeert de bestaande modules
 en orkestreert hun opstartvolgorde:
 
     generate (optioneel) ──► fake.db ──► export/signals ──► output/*.json
-                                                      └──► FastAPI (:8000)
+                                                      ├──► FastAPI (:8000)
+                                                      └──► React/Vite (:5173)
 """
 
 from __future__ import annotations
 
 import argparse
+import os
+import shutil
+import signal
+import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from .backend.config import DB_PATH, OUTPUT_DIR
+from .backend.config import DB_PATH, FRONTEND_DIR, OUTPUT_DIR
 from .backend.data.generate import generate as generate_dataset
 from .backend.export import main as run_signal_export
 from .backend.services import output_ready
@@ -27,6 +32,8 @@ class Application:
     port: int = 8000
     regenerate_db: bool = False
     skip_export: bool = False
+    with_frontend: bool = True
+    _frontend: subprocess.Popen | None = field(default=None, init=False, repr=False)
 
     def ensure_dataset(self) -> None:
         """Zorg dat ``data/fake.db`` bestaat (of forceer hergeneratie)."""
@@ -65,6 +72,41 @@ class Application:
         print("  POST /users/{{id}}/signals/{{sid}}/act")
         uvicorn.run(app, host=self.host, port=self.port, log_level="info")
 
+    def start_frontend(self) -> None:
+        """Start de Vite-devserver op de achtergrond (``npm run dev``)."""
+        npm = shutil.which("npm")
+        if npm is None:
+            print("npm niet gevonden: website wordt niet gestart (installeer Node.js).")
+            return
+
+        if not (FRONTEND_DIR / "node_modules").exists():
+            print("Frontend-dependencies installeren (npm install)...")
+            subprocess.run([npm, "install"], cwd=FRONTEND_DIR, check=True)
+
+        # Eigen procesgroep, zodat we bij afsluiten ook node (kind van npm) stoppen.
+        if os.name == "nt":
+            extra = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+        else:
+            extra = {"start_new_session": True}
+        self._frontend = subprocess.Popen([npm, "run", "dev"], cwd=FRONTEND_DIR, **extra)
+        print("Website start op http://localhost:5173")
+
+    def stop_frontend(self) -> None:
+        """Stop de Vite-devserver inclusief alle kindprocessen."""
+        proc, self._frontend = self._frontend, None
+        if proc is None or proc.poll() is not None:
+            return
+        print("Website stoppen...")
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        else:
+            os.killpg(proc.pid, signal.SIGTERM)
+        proc.wait(timeout=10)
+
     def bootstrap(self) -> None:
         """Dataset klaarzetten + signalen verversen (zonder server)."""
         self.ensure_dataset()
@@ -74,9 +116,14 @@ class Application:
         self.refresh_signals()
 
     def run(self) -> None:
-        """Volledige applicatie: data → signalen → webserver."""
+        """Volledige applicatie: data → signalen → API + website."""
         self.bootstrap()
-        self.start_server()
+        if self.with_frontend:
+            self.start_frontend()
+        try:
+            self.start_server()
+        finally:
+            self.stop_frontend()
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -111,6 +158,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Alleen dataset + signalen draaien, geen webserver",
     )
     parser.add_argument(
+        "--no-frontend",
+        action="store_true",
+        help="Start de website (npm run dev) niet mee",
+    )
+    parser.add_argument(
         "--serve-only",
         action="store_true",
         help="Alleen de API starten (geen generate/export)",
@@ -126,6 +178,7 @@ def main(argv: list[str] | None = None) -> None:
         port=args.port,
         regenerate_db=args.regenerate_db,
         skip_export=args.skip_export,
+        with_frontend=not args.no_frontend,
     )
 
     if args.serve_only:

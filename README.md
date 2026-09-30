@@ -355,14 +355,14 @@ in het veld `assumptions`.
 git clone https://github.com/F-3-R-R-3/Tectonic-Hackaton-Mang.git
 cd Tectonic-Hackaton-Mang
 
-# Backend: genereer de fake-dataset en draai de signalen → output/*.json
-uv run python -m tectonic_hackaton_mang.backend.data.generate
-uv run python -m tectonic_hackaton_mang
-
-# Frontend (KBC-website)
-cd src/tectonic_hackaton_mang/frontend
-npm install
-npm run dev
+# Alles in één commando: dataset + signalen + API (:8000) + website (:5173)
+uv run tectonic-hackaton-mang
 ```
+
+Open daarna **http://localhost:5173**. Bij de eerste start draait `npm install`
+automatisch. Met Ctrl+C stop je API én website samen.
+
+* Enkel de API, zonder website: `uv run tectonic-hackaton-mang --no-frontend`
+* Enkel de website (op mock-data): `cd src/tectonic_hackaton_mang/frontend && npm run dev`
 
 Installatietutorial vind je in [SETUP.md](SETUP.md).
